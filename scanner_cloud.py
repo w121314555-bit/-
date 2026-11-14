@@ -2,7 +2,6 @@ import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
 
 import ccxt
 import numpy as np
@@ -19,13 +18,13 @@ TELEGRAM_CHAT_ID    = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 # ==========================================
 # 2. 全幣種掃描設定 (OKX 公開 API，免 API Key)
 # ==========================================
-MARKET_TYPE      = "SWAP"   # "SWAP" = 全部 USDT 永續合約；"SPOT" = 全部 USDT 現貨
-MIN_24H_VOL_USDT = 0        # 0 = 真正全掃；若想濾掉極冷門幣可改 5000000 (500萬U)
+MARKET_TYPE      = "SWAP"    # "SWAP" = 全部 USDT 永續合約；"SPOT" = 全部 USDT 現貨
+MIN_24H_VOL_USDT = 5000000   # 最低 24H 成交額過濾 (500萬 USDT，避開一字線冷門合約；設 0 為全掃)
 MAX_WORKERS      = 5
-MIN_REQ_INTERVAL = 0.08     # 約每秒 12.5 次請求，避免觸發 OKX 限流
+MIN_REQ_INTERVAL = 0.08      # 約每秒 12.5 次請求，避免觸發 OKX 限流
 
 # ==========================================
-# 3. 7-in-1 Smart v3 參數設定
+# 3. 7-in-1 Smart v3 參數設定 (與 TradingView 同步)
 # ==========================================
 TIMEFRAME      = "15m"
 USE_ADX_FILTER = True
@@ -33,7 +32,7 @@ ADX_THRESH     = 20.0
 USE_VOL_FILTER = True
 VOL_MULT       = 1.2
 USE_HTF_FILTER = True
-HTF_MODE       = "1H"       # 可選 "1H", "4H", "1H + 4H"
+HTF_MODE       = "1H"        # 可選 "1H", "4H", "1H + 4H"
 
 SWING_LOOKBACK = 10
 SL_ATR_BUFFER  = 0.5
@@ -148,9 +147,10 @@ def calc_atr_and_adx(df: pd.DataFrame, length: int = 14):
     plus_dm = pd.Series(np.where((up > down) & (up > 0), up, 0.0), index=df.index)
     minus_dm = pd.Series(np.where((down > up) & (down > 0), down, 0.0), index=df.index)
 
-    plus_di = 100 * calc_rma(plus_dm, length) / atr.replace(0, np.nan)
-    minus_di = 100 * calc_rma(minus_dm, length) / atr.replace(0, np.nan)
-    dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+    # 無波動一字線補 0，確保 ADX 正常衰減並對齊 TradingView
+    plus_di = (100 * calc_rma(plus_dm, length) / atr.replace(0, np.nan)).fillna(0)
+    minus_di = (100 * calc_rma(minus_dm, length) / atr.replace(0, np.nan)).fillna(0)
+    dx = (100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)).fillna(0)
     adx = calc_rma(dx, length)
     return atr, adx
 
@@ -237,7 +237,6 @@ def analyze_symbol(symbol: str) -> bool:
 
     sl_pct = (risk / c_close) * 100
     clean_sym = symbol.replace(":USDT", "")
-    tw_time = datetime.now(timezone.utc).astimezone().strftime("%H:%M:%S")
 
     msg = (
         f"{emoji} {clean_sym} (OKX {MARKET_TYPE} 15m)\n"
@@ -254,7 +253,7 @@ def analyze_symbol(symbol: str) -> bool:
 if __name__ == "__main__":
     start_t = time.monotonic()
     symbols = get_all_okx_symbols()
-    print(f"共取得 {len(symbols)} 個 OKX {MARKET_TYPE} 幣種，開始並行掃描...")
+    print(f"共取得 {len(symbols)} 個 OKX {MARKET_TYPE} 幣種 (24H 成交額 >= {MIN_24H_VOL_USDT:,} USDT)，開始並行掃描...")
 
     hit_count = 0
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
