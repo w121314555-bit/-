@@ -28,7 +28,7 @@ MIN_REQ_INTERVAL = 0.08      # 約每秒 12.5 次請求，避免觸發 OKX 限�
 # ==========================================
 TIMEFRAME      = "15m"
 USE_ADX_FILTER = True
-ADX_THRESH     = 20.0
+ADX_THRESH     = 15.0
 USE_VOL_FILTER = True
 VOL_MULT       = 1.2
 USE_HTF_FILTER = True
