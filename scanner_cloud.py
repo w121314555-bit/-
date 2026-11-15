@@ -20,7 +20,7 @@ TELEGRAM_CHAT_ID    = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 # 2. 全幣種掃描設定 (OKX 公開 API，免 API Key)
 # ==========================================
 MARKET_TYPE      = "SWAP"    # "SWAP" = 全部 USDT 永續合約；"SPOT" = 全部 USDT 現貨
-MIN_24H_VOL_USDT = 5000   # 全週期統一門檻：500 萬 USDT
+MIN_24H_VOL_USDT = 1   # 全週期統一門檻：500 萬 USDT
 MAX_WORKERS      = 5
 MIN_REQ_INTERVAL = 0.08      # 約每秒 12.5 次請求，避免觸發 OKX 限流
 
