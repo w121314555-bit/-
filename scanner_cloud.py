@@ -12,7 +12,7 @@ import requests
 # ==========================================
 # 1. 從 GitHub Secrets 安全讀取通知設定
 # ==========================================
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
+DISCORD_WEBHOOK_URL = os.getenv("https://discord.com/api/webhooks/1571173815436705802/bAEet3HBx2uoZE0zm5kgowcwrU31JZ7gJD4GEmZrnTBI0doh-gZO_X4CDZH0_hZsOGgp", "").strip()
 TELEGRAM_BOT_TOKEN  = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 TELEGRAM_CHAT_ID    = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 
